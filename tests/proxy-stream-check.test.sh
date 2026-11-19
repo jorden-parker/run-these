@@ -67,6 +67,14 @@ labels_both_responses() {
   grep -q "non-streaming" "$sandbox/output" && grep -q "^=== streaming" "$sandbox/output"
 }
 
+sends_no_header_on_input() {
+  [ -e "$sandbox/calls/input-1" ] && [ ! -s "$sandbox/calls/input-1" ] && [ ! -s "$sandbox/calls/input-2" ]
+}
+
+mentions_the_missing_credential() {
+  grep -q "No credential is set" "$sandbox/output"
+}
+
 names_the_other_model() {
   grep -q '"model":"other-model"' "$sandbox/calls/arguments-1"
 }
@@ -106,8 +114,9 @@ exit_code=$?
 expect "stops with usage when the model id is missing" exits_with_usage "model id"
 
 run_check ANTHROPIC_BASE_URL=https://proxy.example "$proxy_stream_check" some-model
-exit_code=$?
-expect "stops with usage when there is no credential" exits_with_usage "ANTHROPIC_AUTH_TOKEN"
+expect "still sends two requests when there is no credential" sends_two_requests
+expect "sends no credential header when there is none" sends_no_header_on_input
+expect "says that it sent no credential" mentions_the_missing_credential
 
 run_check "$configured_check"
 expect "reads the proxy address from .env beside the script" targets_the_messages_endpoint

@@ -33,7 +33,7 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Then fill in `.env`. The script reads the `.env` beside it, and a value there wins over the same variable in the environment. A model id given as the argument wins over both. If your credential is an API key, replace the `ANTHROPIC_AUTH_TOKEN` line with `ANTHROPIC_API_KEY="your-key"`.
+Then fill in `.env`. The script reads the `.env` beside it, and a value there wins over the same variable in the environment. A model id given as the argument wins over both. If your credential is an API key, replace the `ANTHROPIC_AUTH_TOKEN` line with `ANTHROPIC_API_KEY="your-key"`. If you have neither, delete that line: the script then sends the requests with no credential and says so.
 
 Git ignores `.env`, so the token cannot be committed. With `.env` filled in, the script needs no argument:
 

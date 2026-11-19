@@ -10,7 +10,7 @@ Usage: proxy-stream-check <model id>
 Sends the same small request to \$ANTHROPIC_BASE_URL/v1/messages twice,
 first without "stream" and then with "stream": true, and prints both responses.
 
-Needs: ANTHROPIC_BASE_URL, and ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY.
+Needs: ANTHROPIC_BASE_URL. Sends ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY when one is set.
 The model id can also come from ANTHROPIC_MODEL.
 Put them in a .env file beside this script (copy .env.example), or set them in the environment.
 USAGE
@@ -34,14 +34,20 @@ if [ -n "${ANTHROPIC_AUTH_TOKEN:-}" ]; then
 elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   credential_header="x-api-key: $ANTHROPIC_API_KEY"
 else
-  stop_with_usage "Neither ANTHROPIC_AUTH_TOKEN nor ANTHROPIC_API_KEY is set."
+  credential_header=""
+  echo "No credential is set (ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY), so the requests carry none."
+  echo
 fi
+
+print_credential_header() {
+  [ -z "$credential_header" ] || printf '%s\n' "$credential_header"
+}
 
 shared_fields="\"model\":\"$model_id\",\"max_tokens\":64,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]"
 
 send_request() {
   echo "=== $1 ==="
-  printf '%s\n' "$credential_header" | curl --silent --show-error --include --max-time 60 \
+  print_credential_header | curl --silent --show-error --include --max-time 60 \
     --header @- \
     --header "anthropic-version: 2023-06-01" \
     --header "content-type: application/json" \
