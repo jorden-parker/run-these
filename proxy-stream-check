@@ -12,9 +12,15 @@ first without "stream" and then with "stream": true, and prints both responses.
 
 Needs: ANTHROPIC_BASE_URL, and ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY.
 The model id can also come from ANTHROPIC_MODEL.
+Put them in a .env file beside this script (copy .env.example), or set them in the environment.
 USAGE
   exit 2
 }
+
+settings_file="$(dirname "$0")/.env"
+if [ -f "$settings_file" ]; then
+  . "$settings_file"
+fi
 
 model_id="${1:-${ANTHROPIC_MODEL:-}}"
 proxy_address="${ANTHROPIC_BASE_URL:-}"

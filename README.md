@@ -26,6 +26,22 @@ The last line turns on the commit message check for this clone. Git does not cop
 
 It reads the proxy address from `ANTHROPIC_BASE_URL`, and the credential from `ANTHROPIC_AUTH_TOKEN` (sent as a bearer token) or `ANTHROPIC_API_KEY` (sent as `x-api-key`). The model id can come from `ANTHROPIC_MODEL` instead of the argument.
 
+To supply those values in a file:
+
+```
+cp .env.example .env
+chmod 600 .env
+```
+
+Then fill in `.env`. The script reads the `.env` beside it, and a value there wins over the same variable in the environment. A model id given as the argument wins over both. If your credential is an API key, replace the `ANTHROPIC_AUTH_TOKEN` line with `ANTHROPIC_API_KEY="your-key"`.
+
+Git ignores `.env`, so the token cannot be committed. With `.env` filled in, the script needs no argument:
+
+```
+./proxy-stream-check
+./proxy-stream-check claude-haiku-5-5
+```
+
 Read the result like this:
 
 - 429 on the first response and 200 on the second: the proxy refuses non-streaming requests.

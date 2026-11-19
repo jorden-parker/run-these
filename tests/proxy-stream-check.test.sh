@@ -2,10 +2,20 @@
 set -uo pipefail
 
 repository_root="$(cd "$(dirname "$0")/.." && pwd)"
-proxy_stream_check="$repository_root/proxy-stream-check"
 sandbox="$(mktemp -d)"
 failures=0
 trap 'rm -rf "$sandbox"' EXIT
+
+mkdir "$sandbox/plain" "$sandbox/configured"
+cp "$repository_root/proxy-stream-check" "$sandbox/plain/"
+cp "$repository_root/proxy-stream-check" "$sandbox/configured/"
+proxy_stream_check="$sandbox/plain/proxy-stream-check"
+configured_check="$sandbox/configured/proxy-stream-check"
+cat > "$sandbox/configured/.env" <<'SETTINGS'
+ANTHROPIC_BASE_URL="https://proxy.example"
+ANTHROPIC_AUTH_TOKEN="secret-value"
+ANTHROPIC_MODEL="some-model"
+SETTINGS
 
 expect() {
   local description="$1"
@@ -57,6 +67,14 @@ labels_both_responses() {
   grep -q "non-streaming" "$sandbox/output" && grep -q "^=== streaming" "$sandbox/output"
 }
 
+names_the_other_model() {
+  grep -q '"model":"other-model"' "$sandbox/calls/arguments-1"
+}
+
+is_settings_file_ignored() {
+  git -C "$repository_root" check-ignore -q .env
+}
+
 exits_with_usage() {
   [ "$exit_code" = "2" ] && [ ! -e "$sandbox/calls/count" ] && grep -q "$1" "$sandbox/output"
 }
@@ -90,5 +108,18 @@ expect "stops with usage when the model id is missing" exits_with_usage "model i
 run_check ANTHROPIC_BASE_URL=https://proxy.example "$proxy_stream_check" some-model
 exit_code=$?
 expect "stops with usage when there is no credential" exits_with_usage "ANTHROPIC_AUTH_TOKEN"
+
+run_check "$configured_check"
+expect "reads the proxy address from .env beside the script" targets_the_messages_endpoint
+expect "reads the model from .env" names_the_model
+expect "reads the token from .env" sends_header_on_input "Authorization: Bearer secret-value"
+
+run_check ANTHROPIC_BASE_URL=https://other.example "$configured_check"
+expect "prefers .env over the environment" targets_the_messages_endpoint
+
+run_check "$configured_check" other-model
+expect "prefers the model argument over .env" names_the_other_model
+
+expect "git ignores .env, so a token cannot be committed" is_settings_file_ignored
 
 exit "$failures"
