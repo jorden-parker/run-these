@@ -1,0 +1,25 @@
+#!/bin/sh
+set -u
+
+script_folder="$(dirname "$0")"
+kept_lines='^===|^HTTP|^retry-after|^anthropic-ratelimit|"error"|^curl|^No credential'
+
+summarize_model() {
+  echo "##### ${1:-the configured model}"
+  check_output="$("$script_folder/proxy-stream-check" "$@" 2>&1)"
+  if [ "$?" -ne 0 ]; then
+    printf '%s\n' "$check_output"
+    return
+  fi
+  printf '%s\n' "$check_output" | tr -d '\r' | grep -iE "$kept_lines"
+  echo
+}
+
+if [ "$#" -eq 0 ]; then
+  summarize_model
+  exit
+fi
+
+for model_id in "$@"; do
+  summarize_model "$model_id"
+done

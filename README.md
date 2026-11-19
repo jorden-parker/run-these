@@ -17,6 +17,17 @@ The last line turns on the commit message check for this clone. Git does not cop
 | Script | What it does |
 | --- | --- |
 | `proxy-stream-check` | Sends one small request to an Anthropic API proxy twice, without `stream` and with `"stream": true`, and prints both responses. Shows whether the proxy treats the two differently. |
+| `proxy-stream-summary` | Runs `proxy-stream-check` for each model id you give it and prints only the lines that matter: status, `retry-after`, rate limit headers and error bodies. |
+
+### proxy-stream-summary
+
+```
+./proxy-stream-summary claude-opus-5-5 claude-haiku-5-5
+```
+
+It sends two requests per model id, so four for the line above. With no model id it checks the configured model once. It reads the same `.env` as `proxy-stream-check`.
+
+The output is short enough to share: cookies and every other response header are dropped. Still read it once before you share it, because an error body can name an internal host.
 
 ### proxy-stream-check
 
