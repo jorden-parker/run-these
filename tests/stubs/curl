@@ -1,0 +1,6 @@
+#!/bin/sh
+call_number=$(($(cat "$CURL_CALLS/count" 2>/dev/null || echo 0) + 1))
+echo "$call_number" > "$CURL_CALLS/count"
+printf '%s\n' "$@" > "$CURL_CALLS/arguments-$call_number"
+cat > "$CURL_CALLS/input-$call_number"
+echo "HTTP/1.1 429 Too Many Requests"

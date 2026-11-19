@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+cd "$(dirname "$0")"
+
+failed_test_count=0
+for test_script in tests/*.test.sh; do
+  echo "check: $test_script"
+  bash "$test_script" || failed_test_count=$((failed_test_count + 1))
+done
+
+exit "$failed_test_count"

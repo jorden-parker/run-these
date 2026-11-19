@@ -1,0 +1,49 @@
+#!/bin/sh
+set -u
+
+stop_with_usage() {
+  cat >&2 <<USAGE
+$1
+
+Usage: proxy-stream-check <model id>
+
+Sends the same small request to \$ANTHROPIC_BASE_URL/v1/messages twice,
+first without "stream" and then with "stream": true, and prints both responses.
+
+Needs: ANTHROPIC_BASE_URL, and ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY.
+The model id can also come from ANTHROPIC_MODEL.
+USAGE
+  exit 2
+}
+
+model_id="${1:-${ANTHROPIC_MODEL:-}}"
+proxy_address="${ANTHROPIC_BASE_URL:-}"
+proxy_address="${proxy_address%/}"
+
+[ -n "$proxy_address" ] || stop_with_usage "ANTHROPIC_BASE_URL is not set."
+[ -n "$model_id" ] || stop_with_usage "No model id given."
+
+if [ -n "${ANTHROPIC_AUTH_TOKEN:-}" ]; then
+  credential_header="Authorization: Bearer $ANTHROPIC_AUTH_TOKEN"
+elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  credential_header="x-api-key: $ANTHROPIC_API_KEY"
+else
+  stop_with_usage "Neither ANTHROPIC_AUTH_TOKEN nor ANTHROPIC_API_KEY is set."
+fi
+
+shared_fields="\"model\":\"$model_id\",\"max_tokens\":64,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]"
+
+send_request() {
+  echo "=== $1 ==="
+  printf '%s\n' "$credential_header" | curl --silent --show-error --include --max-time 60 \
+    --header @- \
+    --header "anthropic-version: 2023-06-01" \
+    --header "content-type: application/json" \
+    --data "$2" \
+    "$proxy_address/v1/messages" ||
+    echo "curl failed with exit code $?"
+  echo
+}
+
+send_request "non-streaming, what a plugin's background call sends" "{$shared_fields}"
+send_request "streaming, what a normal turn sends" "{$shared_fields,\"stream\":true}"
